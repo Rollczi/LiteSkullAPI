@@ -1,5 +1,5 @@
 # 💜 LiteSkullAPI
-#### Skull library for Bukkit/Spigot/Paper plugins.
+#### Fast and extensive skull library for Bukkit/Spigot/Paper plugins.
 Helpful links:
 - [Support Discord](https://discord.gg/6cUhkj6uZJ)
 - [GitHub issues](https://github.com/Rollczi/LiteSkullAPI/issues)
