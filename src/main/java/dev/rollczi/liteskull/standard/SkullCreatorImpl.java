@@ -29,8 +29,7 @@ public class SkullCreatorImpl implements SkullCreator {
 
     @Override
     public ItemStack applyOnItem(ItemStack item, SkullData data) {
-        ItemStack clone = item.clone();
-        SkullMeta skullMeta = (SkullMeta) clone.getItemMeta();
+        SkullMeta skullMeta = (SkullMeta) item.getItemMeta();
 
         UUID uuid = UUID.nameUUIDFromBytes((data.getValue() + data.getSignature()).getBytes());
         GameProfile gameProfile = new GameProfile(uuid, null);
@@ -48,8 +47,8 @@ public class SkullCreatorImpl implements SkullCreator {
             exception.printStackTrace();
         }
 
-        clone.setItemMeta(skullMeta);
-        return clone;
+        item.setItemMeta(skullMeta);
+        return item;
     }
 
 }
