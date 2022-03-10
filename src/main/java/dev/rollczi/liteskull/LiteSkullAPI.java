@@ -107,7 +107,6 @@ public class LiteSkullAPI implements SkullAPI {
         // [Async] Get from Player
         this.completableHandler.of(playerExtractor.extractData(playerName)).acceptAsync(optional -> {
             if (optional.isPresent()) {
-                Bukkit.broadcastMessage("From profile " + playerName);
                 completableSkullData.complete(optional.get());
                 completableSkullDataToCache.complete(optional.get());
                 completableSkullDataToDataBase.complete(optional.get());
@@ -117,7 +116,6 @@ public class LiteSkullAPI implements SkullAPI {
             // [Async] Get from Database
             this.completableHandler.of(database.extractData(playerName)).acceptAsync(optionalData -> {
                 if (optionalData.isPresent()) {
-                    Bukkit.broadcastMessage("From Database " + playerName);
                     completableSkullData.complete(optionalData.get());
                     completableSkullDataToCache.complete(optionalData.get());
                     return;
@@ -126,7 +124,6 @@ public class LiteSkullAPI implements SkullAPI {
                 // [Async] Get from API
                 this.completableHandler.of(apiExtractor.extractData(playerName)).acceptAsync(optionalApi -> {
                     if (optionalApi.isPresent()) {
-                        Bukkit.broadcastMessage("From API " + playerName);
                         completableSkullData.complete(optionalApi.get());
                         completableSkullDataToCache.complete(optionalApi.get());
                         completableSkullDataToDataBase.complete(optionalApi.get());
@@ -135,7 +132,6 @@ public class LiteSkullAPI implements SkullAPI {
 
 
                     // Get default skull data
-                    Bukkit.broadcastMessage("From default " + playerName);
                     completableSkullData.complete(skullDataDefault.defaultSkullData());
                 });
             });
