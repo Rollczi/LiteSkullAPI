@@ -19,7 +19,7 @@ public class SkullCacheDatabase implements SkullDatabase {
 
     @Override
     public CompletableFuture<Optional<SkullData>> extractData(String playerName) {
-        Optional<SkullData> skullData = Optional.of(this.skullDataCache.get(playerName))
+        Optional<SkullData> skullData = Optional.ofNullable(this.skullDataCache.get(playerName))
                 .filter(skullDataExpire -> skullDataExpire.expire.isBefore(Instant.now()))
                 .map(skullDataWithExpire -> skullDataWithExpire.skullData);
 
