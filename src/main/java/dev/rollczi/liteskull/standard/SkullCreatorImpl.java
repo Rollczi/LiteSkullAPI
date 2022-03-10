@@ -20,8 +20,17 @@ public class SkullCreatorImpl implements SkullCreator {
 
     @Override
     public ItemStack create(SkullData data) {
-        ItemStack itemStack = new ItemStack(Material.valueOf("PLAYER_HEAD"));
-        SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
+        try {
+            return applyOnItem(new ItemStack(Material.valueOf("PLAYER_HEAD")), data);
+        } catch (IllegalArgumentException ignored) {}
+
+        return applyOnItem(new ItemStack(Material.valueOf("SKULL_ITEM"), 1, (short) 3), data);
+    }
+
+    @Override
+    public ItemStack applyOnItem(ItemStack item, SkullData data) {
+        ItemStack clone = item.clone();
+        SkullMeta skullMeta = (SkullMeta) clone.getItemMeta();
 
         UUID uuid = UUID.nameUUIDFromBytes((data.getValue() + data.getSignature()).getBytes());
         GameProfile gameProfile = new GameProfile(uuid, null);
@@ -39,8 +48,8 @@ public class SkullCreatorImpl implements SkullCreator {
             exception.printStackTrace();
         }
 
-        itemStack.setItemMeta(skullMeta);
-        return itemStack;
+        clone.setItemMeta(skullMeta);
+        return clone;
     }
 
 }
