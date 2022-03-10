@@ -19,6 +19,9 @@ dependencies {
     compileOnly "com.mojang:authlib:1.5.25"
 }
 
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
 publishing {
     repositories {
         mavenLocal()
