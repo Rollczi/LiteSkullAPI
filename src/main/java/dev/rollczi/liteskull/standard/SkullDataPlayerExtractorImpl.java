@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -38,8 +39,12 @@ public class SkullDataPlayerExtractorImpl implements SkullDataPlayerExtractor {
                 Property property = gameProfile.getProperties().get("textures").iterator().next();
 
                 return Optional.of(new SkullData(property.getSignature(), property.getValue()));
-            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException exception) {
+            }
+            catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException exception) {
                 exception.printStackTrace();
+            }
+            catch (NoSuchElementException ignored) {
+                return Optional.empty();
             }
 
             return Optional.empty();
