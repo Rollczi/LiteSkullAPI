@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import dev.rollczi.liteskull.api.SkullData;
 import dev.rollczi.liteskull.api.extractor.SkullDataAPIExtractor;
+import dev.rollczi.liteskull.exception.SkullAPIException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -101,7 +102,7 @@ public class SkullDataAPIExtractorImpl implements SkullDataAPIExtractor {
                 }
             }
         } catch (IOException ioException) {
-            System.out.println("Mojang API error " + ioException.getMessage());
+            throw new SkullAPIException("Mojang API error", ioException);
         }
 
         return builder.toString();
