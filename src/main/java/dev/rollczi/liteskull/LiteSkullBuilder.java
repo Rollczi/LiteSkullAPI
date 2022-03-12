@@ -15,7 +15,7 @@ import dev.rollczi.liteskull.api.extractor.SkullDatabase;
 import dev.rollczi.liteskull.standard.BukkitSynchronizedSchedulerImpl;
 import dev.rollczi.liteskull.standard.SkullCacheDatabase;
 import dev.rollczi.liteskull.standard.SkullCreatorImpl;
-import dev.rollczi.liteskull.standard.SkullDataAPIExtractorImpl;
+import dev.rollczi.liteskull.standard.SkullDataMojangAPIExtractorImpl;
 import dev.rollczi.liteskull.standard.SkullDataDefaultImpl;
 import dev.rollczi.liteskull.standard.SkullDataPlayerExtractorImpl;
 import dev.rollczi.liteskull.standard.SynchronizedSchedulerImpl;
@@ -32,7 +32,7 @@ public class LiteSkullBuilder {
 
     private SkullDataPlayerExtractor playerExtractor = new SkullDataPlayerExtractorImpl();
     private SkullDatabase database = new SkullCacheDatabase();
-    private SkullDataAPIExtractor apiExtractor = new SkullDataAPIExtractorImpl(300, Duration.ofMinutes(10));
+    private SkullDataAPIExtractor apiExtractor = new SkullDataMojangAPIExtractorImpl(300, Duration.ofMinutes(10));
     private SkullDataDefault skullDataDefault = new SkullDataDefaultImpl();
     private SkullCreator creator = new SkullCreatorImpl();
     private SynchronizedExecutor syncExecutor = new SynchronizedSchedulerImpl();

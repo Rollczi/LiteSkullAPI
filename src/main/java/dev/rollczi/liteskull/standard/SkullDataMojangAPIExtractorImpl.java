@@ -10,7 +10,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import dev.rollczi.liteskull.api.SkullData;
 import dev.rollczi.liteskull.api.extractor.SkullDataAPIExtractor;
-import dev.rollczi.liteskull.exception.SkullAPIException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,11 +25,11 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public class SkullDataAPIExtractorImpl implements SkullDataAPIExtractor {
+public class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
 
     private final int limitMojang;
     private final Cache<UUID, String> lastRequests;
-    public SkullDataAPIExtractorImpl(int limitMojang, Duration expireRequests) {
+    public SkullDataMojangAPIExtractorImpl(int limitMojang, Duration expireRequests) {
         this.limitMojang = limitMojang;
         this.lastRequests = CacheBuilder.newBuilder()
                 .expireAfterWrite(expireRequests.get(ChronoUnit.SECONDS), TimeUnit.SECONDS)
@@ -101,9 +100,7 @@ public class SkullDataAPIExtractorImpl implements SkullDataAPIExtractor {
                     builder.append(line);
                 }
             }
-        } catch (IOException ioException) {
-            throw new SkullAPIException("Mojang API error", ioException);
-        }
+        } catch (IOException ignored) {}
 
         return builder.toString();
     }
