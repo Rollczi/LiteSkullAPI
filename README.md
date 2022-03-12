@@ -4,15 +4,15 @@ Helpful links:
 - [Support Discord](https://discord.gg/6cUhkj6uZJ)
 - [GitHub issues](https://github.com/Rollczi/LiteSkullAPI/issues)
 
-### Eternal Repository (Maven or Gradle)  ❤️
+### Minecodes Repository (Maven or Gradle)  ❤️
 ```xml
 <repository>
-  <id>eternal-repository</id>
-  <url>https://repo.eternalcode.pl/releases</url>
+  <id>minecodes-repository</id>
+  <url>https://repository.minecodes.pl/releases</url>
 </repository>
 ```
 ```groovy
-maven { url "https://repo.eternalcode.pl/releases" }
+maven { url "https://repository.minecodes.pl/releases" }
 ```
 ### Dependencies (Maven or Gradle)
 Framework Core
