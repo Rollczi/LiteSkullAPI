@@ -17,7 +17,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-public class SkullDataPlayerExtractorImpl implements SkullDataPlayerExtractor {
+class SkullDataPlayerExtractorImpl implements SkullDataPlayerExtractor {
 
     @Override
     public CompletableFuture<Optional<SkullData>> extractData(String playerName) {

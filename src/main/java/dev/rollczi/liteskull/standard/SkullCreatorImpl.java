@@ -16,7 +16,7 @@ import org.bukkit.inventory.meta.SkullMeta;
 import java.lang.reflect.Field;
 import java.util.UUID;
 
-public class SkullCreatorImpl implements SkullCreator {
+class SkullCreatorImpl implements SkullCreator {
 
     @Override
     public ItemStack create(SkullData data) {

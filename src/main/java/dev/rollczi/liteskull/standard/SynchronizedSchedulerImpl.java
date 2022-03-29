@@ -5,11 +5,12 @@
 package dev.rollczi.liteskull.standard;
 
 import dev.rollczi.liteskull.api.SynchronizedExecutor;
+import org.jetbrains.annotations.NotNull;
 
-public class SynchronizedSchedulerImpl implements SynchronizedExecutor {
+class SynchronizedSchedulerImpl implements SynchronizedExecutor {
 
     @Override
-    public void execute(Runnable runnable) {
+    public void execute(@NotNull Runnable runnable) {
         throw new UnsupportedOperationException("SyncExecutor is not implement! User LiteSkullBuilder#scheduler() or LiteSkullBuilder#bukkitScheduler()");
     }
 

@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
+class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
 
     private final int limitMojang;
     private final Cache<UUID, String> lastRequests;
