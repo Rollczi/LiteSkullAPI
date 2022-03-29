@@ -2,8 +2,9 @@
  * Copyright (c) 2022 Rollczi
  */
 
-package dev.rollczi.liteskull;
+package dev.rollczi.liteskull.standard;
 
+import dev.rollczi.liteskull.LiteSkullAPI;
 import dev.rollczi.liteskull.api.SkullAPI;
 import dev.rollczi.liteskull.api.SkullCreator;
 import dev.rollczi.liteskull.api.SynchronizedExecutor;
@@ -12,13 +13,6 @@ import dev.rollczi.liteskull.api.extractor.SkullDataAPIExtractor;
 import dev.rollczi.liteskull.api.extractor.SkullDataPlayerExtractor;
 import dev.rollczi.liteskull.api.SkullData;
 import dev.rollczi.liteskull.api.extractor.SkullDatabase;
-import dev.rollczi.liteskull.standard.BukkitSynchronizedSchedulerImpl;
-import dev.rollczi.liteskull.standard.SkullCacheDatabase;
-import dev.rollczi.liteskull.standard.SkullCreatorImpl;
-import dev.rollczi.liteskull.standard.SkullDataMojangAPIExtractorImpl;
-import dev.rollczi.liteskull.standard.SkullDataDefaultImpl;
-import dev.rollczi.liteskull.standard.SkullDataPlayerExtractorImpl;
-import dev.rollczi.liteskull.standard.SynchronizedSchedulerImpl;
 import org.bukkit.plugin.Plugin;
 
 import java.time.Duration;

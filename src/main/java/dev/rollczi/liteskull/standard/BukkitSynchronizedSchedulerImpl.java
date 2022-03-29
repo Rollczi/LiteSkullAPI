@@ -7,7 +7,7 @@ package dev.rollczi.liteskull.standard;
 import dev.rollczi.liteskull.api.SynchronizedExecutor;
 import org.bukkit.plugin.Plugin;
 
-public class BukkitSynchronizedSchedulerImpl implements SynchronizedExecutor {
+class BukkitSynchronizedSchedulerImpl implements SynchronizedExecutor {
 
     private final Plugin plugin;
 
