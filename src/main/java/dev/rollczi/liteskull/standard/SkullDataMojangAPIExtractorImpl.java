@@ -27,14 +27,18 @@ import java.util.concurrent.TimeUnit;
 
 class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
 
+    private final static String MOJANG_URL = "https://api.mojang.com/users/profiles/minecraft/%s";
+    private final static String MOJANG_SIGNATURE_URL = "https://sessionserver.mojang.com/session/minecraft/profile/%s";
+
+    private final Gson gson = new Gson();
     private final int limitMojang;
     private final Cache<UUID, String> lastRequests;
+
     public SkullDataMojangAPIExtractorImpl(int limitMojang, Duration expireRequests) {
         this.limitMojang = limitMojang;
         this.lastRequests = CacheBuilder.newBuilder()
                 .expireAfterWrite(expireRequests.get(ChronoUnit.SECONDS), TimeUnit.SECONDS)
                 .build();
-
     }
 
     @Override
@@ -46,16 +50,15 @@ class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 lastRequests.put(UUID.randomUUID(), player);
-                String result = readURLContent("https://api.mojang.com/users/profiles/minecraft/" + player);
+                String result = readURLContent(String.format(MOJANG_URL, player));
 
                 if (result.isEmpty()) {
                     return Optional.empty();
                 }
 
-                Gson gson = new Gson();
                 JsonObject jsonObject = gson.fromJson(result, JsonObject.class);
-                String uid = jsonObject.get("id").toString().replace("\"", "");
-                String signature = readURLContent("https://sessionserver.mojang.com/session/minecraft/profile/" + uid);
+                String uuid = jsonObject.get("id").toString().replace("\"", "");
+                String signature = readURLContent(String.format(MOJANG_SIGNATURE_URL, uuid));
 
                 if (signature.isEmpty()) {
                     return Optional.empty();
