@@ -20,13 +20,13 @@ public class SkullCacheDatabaseTest {
 
     private final static Instant PAST = Instant.ofEpochSecond(0);
     private final static Instant NOW = Instant.ofEpochSecond(100);
-    private final static Instant FEATURE = Instant.ofEpochSecond(1000);
+    private final static Instant FUTURE = Instant.ofEpochSecond(1000);
 
     @Test
     public void test() {
         SkullCacheDatabase database = new SkullCacheDatabase(() -> NOW);
 
-        database.saveSkullData("before-expire", DATA, FEATURE);
+        database.saveSkullData("before-expire", DATA, FUTURE);
         database.saveSkullData("expired", DATA, PAST);
 
         assertTrue(isPresent(database.extractData("before-expire")));

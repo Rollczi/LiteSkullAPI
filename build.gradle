@@ -28,25 +28,25 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 publishing {
-    repositories {
-        mavenLocal()
-        maven {
-            name = "eternalcode-repository"
-            url = uri("https://repo.eternalcode.pl/releases")
-            credentials {
-                username = "$lucky_user_litecommands"
-                password = "$lucky_pass_litecommands"
-            }
-        }
-        maven {
-            name = "mine-repository"
-            url = uri("https://repository.minecodes.pl/releases")
-            credentials {
-                username = "$mine_user"
-                password = "$mine_pass"
-            }
-        }
-    }
+//    repositories {
+//        mavenLocal()
+//        maven {
+//            name = "eternalcode-repository"
+//            url = uri("https://repo.eternalcode.pl/releases")
+//            credentials {
+//                username = "$lucky_user_litecommands"
+//                password = "$lucky_pass_litecommands"
+//            }
+//        }
+//        maven {
+//            name = "mine-repository"
+//            url = uri("https://repository.minecodes.pl/releases")
+//            credentials {
+//                username = "$mine_user"
+//                password = "$mine_pass"
+//            }
+//        }
+//    }
 
     publications {
         libraries(MavenPublication) {
