@@ -12,7 +12,7 @@ Helpful links:
 </repository>
 ```
 ```groovy
-maven { url "https://repo.eternalcode.pl/releases" }
+maven { url "https://repository.minecodes.pl/releases" }
 ```
 ### Dependencies (Maven or Gradle)
 Framework Core
