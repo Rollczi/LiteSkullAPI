@@ -7,7 +7,7 @@ Helpful links:
 ### mineCodes Repository (Maven or Gradle)  ❤️
 ```xml
 <repository>
-  <id>eternal-repository</id>
+  <id>minecodes-repository</id>
   <url>https://repository.minecodes.pl/releases</url>
 </repository>
 ```
