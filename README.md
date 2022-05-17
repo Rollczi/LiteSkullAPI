@@ -4,11 +4,11 @@ Helpful links:
 - [Support Discord](https://discord.gg/6cUhkj6uZJ)
 - [GitHub issues](https://github.com/Rollczi/LiteSkullAPI/issues)
 
-### Eternal Repository (Maven or Gradle)  ❤️
+### mineCodes Repository (Maven or Gradle)  ❤️
 ```xml
 <repository>
   <id>eternal-repository</id>
-  <url>https://repo.eternalcode.pl/releases</url>
+  <url>https://repository.minecodes.pl/releases</url>
 </repository>
 ```
 ```groovy
