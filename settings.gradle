@@ -1,2 +1,3 @@
 rootProject.name = 'LiteSkullAPI'
+include 'example-plugin'
 
