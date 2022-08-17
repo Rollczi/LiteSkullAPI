@@ -4,6 +4,7 @@
 
 package dev.rollczi.liteskull.standard;
 
+import dev.rollczi.liteskull.api.PlayerIdentification;
 import dev.rollczi.liteskull.api.SkullData;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SkullCacheDatabaseTest {
+class SkullCacheDatabaseTest {
 
     private final static SkullData DATA = new SkullData("", "");
 
@@ -22,15 +23,18 @@ public class SkullCacheDatabaseTest {
     private final static Instant NOW = Instant.ofEpochSecond(100);
     private final static Instant FUTURE = Instant.ofEpochSecond(1000);
 
+    private final static PlayerIdentification BEFORE_ID = PlayerIdentification.of("before-expire");
+    private final static PlayerIdentification EXPIRED_ID = PlayerIdentification.of("expired");
+
     @Test
-    public void test() {
+    void test() {
         SkullCacheDatabase database = new SkullCacheDatabase(() -> NOW);
 
-        database.saveSkullData("before-expire", DATA, FUTURE);
-        database.saveSkullData("expired", DATA, PAST);
+        database.saveSkullData(BEFORE_ID, DATA, FUTURE);
+        database.saveSkullData(EXPIRED_ID, DATA, PAST);
 
-        assertTrue(isPresent(database.extractData("before-expire")));
-        assertFalse(isPresent(database.extractData("expired")));
+        assertTrue(isPresent(database.extractData(BEFORE_ID)));
+        assertFalse(isPresent(database.extractData(EXPIRED_ID)));
     }
 
     private <T> boolean isPresent(CompletableFuture<Optional<T>> future) {

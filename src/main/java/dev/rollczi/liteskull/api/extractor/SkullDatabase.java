@@ -4,6 +4,7 @@
 
 package dev.rollczi.liteskull.api.extractor;
 
+import dev.rollczi.liteskull.api.PlayerIdentification;
 import dev.rollczi.liteskull.api.SkullData;
 
 import java.time.Instant;
@@ -13,8 +14,8 @@ import java.util.concurrent.CompletableFuture;
 public interface SkullDatabase extends SkullExtractor {
 
     @Override
-    CompletableFuture<Optional<SkullData>> extractData(String playerName);
+    CompletableFuture<Optional<SkullData>> extractData(PlayerIdentification playerIdentification);
 
-    void saveSkullData(String playerName, SkullData skullData, Instant expire);
+    void saveSkullData(PlayerIdentification identification, SkullData skullData, Instant expire);
 
 }

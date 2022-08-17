@@ -4,6 +4,7 @@
 
 package dev.rollczi.liteskull.standard;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import dev.rollczi.liteskull.LiteSkullAPI;
 import dev.rollczi.liteskull.api.SkullAPI;
 import dev.rollczi.liteskull.api.SkullCreator;
@@ -16,21 +17,37 @@ import dev.rollczi.liteskull.api.extractor.SkullDatabase;
 import org.bukkit.plugin.Plugin;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LiteSkullBuilder {
+
+    private Logger logger = Logger.getLogger("LiteSkullAPI");
+
+    private final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+            .setUncaughtExceptionHandler((thread, throwable) -> logger.log(Level.SEVERE, "Uncaught exception during task execute", throwable))
+            .setNameFormat("LiteSkullAPI %d")
+            .build();
 
     private Duration cacheExpireAfterWrite = Duration.ofMinutes(15L);
     private Duration cacheExpireAfterAccess = Duration.ZERO;
     private Duration dataBaseSaveExpire = Duration.ofMinutes(60L);
 
-    private SkullDataPlayerExtractor playerExtractor = new SkullDataPlayerExtractorImpl();
+    private SkullDataPlayerExtractor playerExtractor = new SkullDataPlayerExtractorImpl(8);
     private SkullDatabase database = new SkullCacheDatabase();
-    private SkullDataAPIExtractor apiExtractor = new SkullDataMojangAPIExtractorImpl(300, Duration.ofMinutes(10));
+    private SkullDataAPIExtractor apiExtractor = new SkullDataMojangAPIExtractorImpl(8, 300, Duration.ofMinutes(10));
     private SkullDataDefault skullDataDefault = new SkullDataDefaultImpl();
     private SkullCreator creator = new SkullCreatorImpl();
     private SynchronizedExecutor syncExecutor = new SynchronizedSchedulerImpl();
-    private int threadPool = 20;
+    private int threadPool = 8;
+
+    public LiteSkullBuilder logger(Logger logger) {
+        this.logger = logger;
+        return this;
+    }
 
     public LiteSkullBuilder cacheExpireAfterWrite(Duration duration) {
         this.cacheExpireAfterWrite = duration;
@@ -94,6 +111,8 @@ public class LiteSkullBuilder {
 
 
     public SkullAPI build() {
+        ExecutorService executorService = Executors.newFixedThreadPool(threadPool, threadFactory);
+
         return new LiteSkullAPI(
                 playerExtractor,
                 database,
@@ -104,7 +123,7 @@ public class LiteSkullBuilder {
                 cacheExpireAfterWrite,
                 cacheExpireAfterAccess,
                 syncExecutor,
-                Executors.newFixedThreadPool(threadPool)
+                executorService
         );
     }
 

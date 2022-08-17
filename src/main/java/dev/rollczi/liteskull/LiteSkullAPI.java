@@ -6,6 +6,7 @@ package dev.rollczi.liteskull;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import dev.rollczi.liteskull.api.PlayerIdentification;
 import dev.rollczi.liteskull.api.SkullAPI;
 import dev.rollczi.liteskull.api.SkullCreator;
 import dev.rollczi.liteskull.api.SynchronizedExecutor;
@@ -14,8 +15,6 @@ import dev.rollczi.liteskull.api.extractor.SkullDataAPIExtractor;
 import dev.rollczi.liteskull.api.extractor.SkullDataPlayerExtractor;
 import dev.rollczi.liteskull.api.SkullData;
 import dev.rollczi.liteskull.api.extractor.SkullDatabase;
-import dev.rollczi.liteskull.shared.CompletableHandler;
-import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
@@ -23,16 +22,20 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class LiteSkullAPI implements SkullAPI {
 
-    private final Cache<String, SkullData> cachedSkulls;
+    private final Cache<String, SkullData> cachedSkullsByName;
+    private final Cache<UUID, SkullData> cachedSkullsByUuid;
 
     private final SkullDataPlayerExtractor playerExtractor;
     private final SkullDatabase database;
@@ -41,7 +44,7 @@ public class LiteSkullAPI implements SkullAPI {
     private final SkullDataDefault skullDataDefault;
     private final SkullCreator creator;
     private final SynchronizedExecutor syncExecutor;
-    private final CompletableHandler completableHandler;
+    private final ExecutorService asyncExecutor;
 
     public LiteSkullAPI(
             SkullDataPlayerExtractor playerExtractor,
@@ -53,7 +56,7 @@ public class LiteSkullAPI implements SkullAPI {
             Duration expireAfterWrite,
             Duration expireAfterAccess,
             SynchronizedExecutor syncExecutor,
-            Executor executor
+            ExecutorService asyncExecutor
     ) {
         this.playerExtractor = playerExtractor;
         this.database = database;
@@ -62,7 +65,10 @@ public class LiteSkullAPI implements SkullAPI {
         this.skullDataDefault = skullDataDefault;
         this.creator = creator;
         this.syncExecutor = syncExecutor;
-        this.completableHandler = new CompletableHandler(executor);
+        this.asyncExecutor = asyncExecutor;
+
+        this.playerExtractor.setExecutor(asyncExecutor);
+        this.apiExtractor.setExecutor(asyncExecutor);
 
         CacheBuilder<Object, Object> cache = CacheBuilder.newBuilder();
 
@@ -74,39 +80,174 @@ public class LiteSkullAPI implements SkullAPI {
             cache.expireAfterAccess(expireAfterAccess.get(ChronoUnit.SECONDS), TimeUnit.SECONDS);
         }
 
-        this.cachedSkulls = cache.build();
+        this.cachedSkullsByName = cache.build();
+        this.cachedSkullsByUuid = cache.build();
     }
 
     @Override
     public @NotNull CompletableFuture<ItemStack> getSkull(String playerName) {
-        CompletableFuture<ItemStack> completableItem = new CompletableFuture<>();
+        return this.getSkullByIdentification(PlayerIdentification.of(playerName));
+    }
 
-        this.completableHandler.of(this.getSkullData(playerName)).acceptAsync(skullData -> completableItem.complete(creator.create(skullData)));
-        return completableItem;
+    @Override
+    public @NotNull CompletableFuture<ItemStack> getSkull(UUID playerUuid) {
+        return this.getSkullByIdentification(PlayerIdentification.of(playerUuid));
     }
 
     @Override
     public @NotNull CompletableFuture<SkullData> getSkullData(String playerName) {
+        return this.getSkullDataByIdentification(PlayerIdentification.of(playerName));
+    }
+
+    @Override
+    public @NotNull CompletableFuture<SkullData> getSkullData(UUID playerUuid) {
+        return this.getSkullDataByIdentification(PlayerIdentification.of(playerUuid));
+    }
+
+    @Blocking
+    @Override
+    public @NotNull ItemStack awaitSkull(String playerName, long timeout, TimeUnit unit) {
+        return this.awaitSkull(PlayerIdentification.of(playerName), timeout, unit);
+    }
+
+    @Blocking
+    @Override
+    public @NotNull SkullData awaitSkullData(String playerName, long timeout, TimeUnit unit) {
+        return this.awaitSkullData(PlayerIdentification.of(playerName), timeout, unit);
+    }
+
+    @Blocking
+    @Override
+    public @NotNull ItemStack awaitSkull(UUID playerUuid, long timeout, TimeUnit unit) {
+        return this.awaitSkull(PlayerIdentification.of(playerUuid), timeout, unit);
+    }
+
+    @Blocking
+    @Override
+    public @NotNull SkullData awaitSkullData(UUID playerUuid, long timeout, TimeUnit unit) {
+        return this.awaitSkullData(PlayerIdentification.of(playerUuid), timeout, unit);
+    }
+
+    @Blocking
+    private ItemStack awaitSkull(PlayerIdentification identification, long timeout, TimeUnit unit) {
+        return this.await(this.getSkullByIdentification(identification), timeout, unit, () -> this.creator.create(skullDataDefault.defaultSkullData()));
+    }
+
+    @Blocking
+    private SkullData awaitSkullData(PlayerIdentification identification, long timeout, TimeUnit unit) {
+        return this.await(this.getSkullDataByIdentification(identification), timeout, unit, skullDataDefault::defaultSkullData);
+    }
+
+    @Blocking
+    private <T> T await(CompletableFuture<T> future, long timeout, TimeUnit unit, Supplier<T> defaultValue) {
+        try {
+            return future.get(timeout, unit);
+        }
+        catch (InterruptedException | ExecutionException | TimeoutException exception) {
+            return defaultValue.get();
+        }
+    }
+
+    @Override
+    public void acceptSyncSkull(String playerName, Consumer<ItemStack> skullConsumer) {
+        this.acceptSync(this.getSkull(playerName), skullConsumer);
+    }
+
+    @Override
+    public void acceptAsyncSkull(String playerName, Consumer<ItemStack> skullConsumer) {
+        this.acceptAsync(this.getSkull(playerName), skullConsumer);
+    }
+
+    @Override
+    public void acceptSyncSkull(UUID playerUuid, Consumer<ItemStack> skullConsumer) {
+        this.acceptSync(this.getSkull(playerUuid), skullConsumer);
+    }
+
+    @Override
+    public void acceptAsyncSkull(UUID playerUuid, Consumer<ItemStack> skullConsumer) {
+        this.acceptAsync(this.getSkull(playerUuid), skullConsumer);
+    }
+
+    @Override
+    public void acceptSyncSkullData(String playerName, Consumer<SkullData> skullConsumer) {
+        this.acceptSync(this.getSkullData(playerName), skullConsumer);
+
+    }
+
+    @Override
+    public void acceptAsyncSkullData(String playerName, Consumer<SkullData> skullConsumer) {
+        this.acceptAsync(this.getSkullData(playerName), skullConsumer);
+    }
+
+    @Override
+    public void acceptSyncSkullData(UUID playerUuid, Consumer<SkullData> skullConsumer) {
+        this.acceptSync(this.getSkullData(playerUuid), skullConsumer);
+    }
+
+    @Override
+    public void acceptAsyncSkullData(UUID playerUuid, Consumer<SkullData> skullConsumer) {
+        this.acceptAsync(this.getSkullData(playerUuid), skullConsumer);
+    }
+
+    @Override
+    public void shutdown() {
+        asyncExecutor.shutdown();
+    }
+
+    @Override
+    public ExecutorService getAsyncExecutor() {
+        return asyncExecutor;
+    }
+
+    @Override
+    public SynchronizedExecutor getSyncExecutor() {
+        return syncExecutor;
+    }
+
+    private <T> void acceptSync(CompletableFuture<T> future, Consumer<T> consumer) {
+        this.acceptAsync(future, t -> this.syncExecutor.execute(() -> consumer.accept(t)));
+    }
+
+    private <T> void acceptAsync(CompletableFuture<T> future, Consumer<T> consumer) {
+        future.whenComplete((t, throwable) -> {
+            if (throwable != null) {
+                throwable.printStackTrace();
+                return;
+            }
+
+            consumer.accept(t);
+        });
+    }
+
+    private CompletableFuture<ItemStack> getSkullByIdentification(PlayerIdentification identification) {
+        return this.getSkullDataByIdentification(identification)
+                .thenApplyAsync(creator::create, asyncExecutor);
+    }
+
+    private CompletableFuture<SkullData> getSkullDataByIdentification(PlayerIdentification identification) {
         CompletableFuture<SkullData> completableSkullData = new CompletableFuture<>();
         CompletableFuture<SkullData> completableSkullDataToCache = new CompletableFuture<>();
         CompletableFuture<SkullData> completableSkullDataToDataBase = new CompletableFuture<>();
 
-        this.completableHandler.of(completableSkullDataToCache).acceptAsync(skullData -> this.cachedSkulls.put(playerName, skullData));
-        this.completableHandler.of(completableSkullDataToDataBase).acceptAsync(skullData -> {
+        completableSkullDataToCache.thenAcceptAsync(skullData -> {
+            identification.peek(name -> this.cachedSkullsByName.put(name, skullData), uuid -> this.cachedSkullsByUuid.put(uuid, skullData));
+        }, asyncExecutor);
+
+        completableSkullDataToDataBase.thenAcceptAsync(skullData -> {
             Instant expire = Instant.now().plus(this.dataBaseSaveExpire);
 
-            this.database.saveSkullData(playerName, skullData, expire);
-        });
+            this.database.saveSkullData(identification, skullData, expire);
+        }, asyncExecutor);
 
-        SkullData cachedSkull = cachedSkulls.getIfPresent(playerName);
+        SkullData cachedSkull = identification.map(cachedSkullsByName::getIfPresent, cachedSkullsByUuid::getIfPresent);
 
         if (cachedSkull != null) {
             return CompletableFuture.completedFuture(cachedSkull);
         }
 
         // [Async] Get from Player
-        this.completableHandler.of(playerExtractor.extractData(playerName)).acceptAsync(optional -> {
-            if (optional.isPresent()) {
+        playerExtractor.extractData(identification).whenComplete((optional, playerExtractError) -> {
+            if (playerExtractError == null && optional.isPresent()) {
                 completableSkullData.complete(optional.get());
                 completableSkullDataToCache.complete(optional.get());
                 completableSkullDataToDataBase.complete(optional.get());
@@ -114,16 +255,16 @@ public class LiteSkullAPI implements SkullAPI {
             }
 
             // [Async] Get from Database
-            this.completableHandler.of(database.extractData(playerName)).acceptAsync(optionalData -> {
-                if (optionalData.isPresent()) {
+            database.extractData(identification).whenComplete((optionalData, databaseExtractError) -> {
+                if (databaseExtractError == null && optionalData.isPresent()) {
                     completableSkullData.complete(optionalData.get());
                     completableSkullDataToCache.complete(optionalData.get());
                     return;
                 }
 
                 // [Async] Get from API
-                this.completableHandler.of(apiExtractor.extractData(playerName)).acceptAsync(optionalApi -> {
-                    if (optionalApi.isPresent()) {
+                apiExtractor.extractData(identification).whenComplete((optionalApi, apiExtractError) -> {
+                    if (apiExtractError == null && optionalApi.isPresent()) {
                         completableSkullData.complete(optionalApi.get());
                         completableSkullDataToCache.complete(optionalApi.get());
                         completableSkullDataToDataBase.complete(optionalApi.get());
@@ -138,52 +279,6 @@ public class LiteSkullAPI implements SkullAPI {
         });
 
         return completableSkullData;
-    }
-
-    @NotNull
-    @Blocking
-    @Override
-    public ItemStack awaitForSkull(String playerName, long timeout, TimeUnit unit) {
-        try {
-            return this.getSkull(playerName).get(timeout, unit);
-        } catch (InterruptedException | ExecutionException | TimeoutException exception) {
-            return this.creator.create(skullDataDefault.defaultSkullData());
-        }
-    }
-
-    @NotNull
-    @Blocking
-    @Override
-    public SkullData awaitForSkullData(String playerName, long timeout, TimeUnit unit) {
-        try {
-            return this.getSkullData(playerName).get(timeout, unit);
-        } catch (InterruptedException | ExecutionException | TimeoutException exception) {
-            return skullDataDefault.defaultSkullData();
-        }
-    }
-
-    @Override
-    public void acceptSyncSkull(String playerName, Consumer<ItemStack> skullConsumer) {
-        this.completableHandler.of(this.getSkull(playerName))
-                .acceptAsync(itemStack -> this.syncExecutor.execute(() -> skullConsumer.accept(itemStack)));
-    }
-
-    @Override
-    public void acceptAsyncSkull(String playerName, Consumer<ItemStack> skullConsumer) {
-        this.completableHandler.of(this.getSkull(playerName))
-                .acceptAsync(skullConsumer);
-    }
-
-    @Override
-    public void acceptSyncSkullData(String playerName, Consumer<SkullData> skullConsumer) {
-        this.completableHandler.of(this.getSkullData(playerName))
-                .acceptAsync(skullData -> this.syncExecutor.execute(() -> skullConsumer.accept(skullData)));
-    }
-
-    @Override
-    public void acceptAsyncSkullData(String playerName, Consumer<SkullData> skullConsumer) {
-        this.completableHandler.of(this.getSkullData(playerName))
-                .acceptAsync(skullConsumer);
     }
 
 }

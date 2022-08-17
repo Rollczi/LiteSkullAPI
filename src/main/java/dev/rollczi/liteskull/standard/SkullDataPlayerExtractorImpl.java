@@ -6,6 +6,8 @@ package dev.rollczi.liteskull.standard;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
+import dev.rollczi.liteskull.api.PlayerIdentification;
+import dev.rollczi.liteskull.api.SkullAPIException;
 import dev.rollczi.liteskull.api.SkullData;
 import dev.rollczi.liteskull.api.extractor.SkullDataPlayerExtractor;
 import org.bukkit.Bukkit;
@@ -16,21 +18,25 @@ import java.lang.reflect.Method;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 class SkullDataPlayerExtractorImpl implements SkullDataPlayerExtractor {
 
-    @Override
-    public CompletableFuture<Optional<SkullData>> extractData(String playerName) {
-        return CompletableFuture.supplyAsync(() -> {
-            Optional<? extends Player> optional = Bukkit.getOnlinePlayers().stream()
-                    .filter(player -> player.getName().equalsIgnoreCase(playerName))
-                    .findAny();
+    private Executor executor;
 
-            if (!optional.isPresent()) {
+    SkullDataPlayerExtractorImpl(int pool) {
+        this.executor = Executors.newFixedThreadPool(pool);
+    }
+
+    @Override
+    public CompletableFuture<Optional<SkullData>> extractData(PlayerIdentification identification) {
+        return CompletableFuture.supplyAsync(() -> {
+            Player player = identification.map(Bukkit::getPlayer, Bukkit::getPlayer);
+
+            if (player == null) {
                 return Optional.empty();
             }
-
-            Player player = optional.get();
 
             try {
 
@@ -41,14 +47,17 @@ class SkullDataPlayerExtractorImpl implements SkullDataPlayerExtractor {
                 return Optional.of(new SkullData(property.getSignature(), property.getValue()));
             }
             catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException exception) {
-                exception.printStackTrace();
+                throw new SkullAPIException("Can't extract texture from player", exception);
             }
             catch (NoSuchElementException ignored) {
                 return Optional.empty();
             }
+        }, executor);
+    }
 
-            return Optional.empty();
-        });
+    @Override
+    public void setExecutor(Executor executor) {
+        this.executor = executor;
     }
 
 }

@@ -4,6 +4,7 @@
 
 package dev.rollczi.liteskull.standard;
 
+import dev.rollczi.liteskull.api.PlayerIdentification;
 import dev.rollczi.liteskull.api.SkullData;
 import dev.rollczi.liteskull.api.extractor.SkullDatabase;
 
@@ -11,13 +12,16 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 class SkullCacheDatabase implements SkullDatabase {
 
-    private final Map<String, SkullDataWithExpire> skullDataCache = new ConcurrentHashMap<>();
+    private final Map<String, SkullDataWithExpire> skullCacheByName = new ConcurrentHashMap<>();
+    private final Map<UUID, SkullDataWithExpire> skullCacheByUuid = new ConcurrentHashMap<>();
+
     private final Supplier<Instant> nowSupplier;
 
     SkullCacheDatabase(Supplier<Instant> nowSupplier) {
@@ -29,15 +33,15 @@ class SkullCacheDatabase implements SkullDatabase {
     }
 
     @Override
-    public CompletableFuture<Optional<SkullData>> extractData(String playerName) {
-        SkullDataWithExpire skullDataExpire = this.skullDataCache.get(playerName);
+    public CompletableFuture<Optional<SkullData>> extractData(PlayerIdentification identification) {
+        SkullDataWithExpire skullDataExpire = identification.map(this.skullCacheByName::get, this.skullCacheByUuid::get);
 
         if (skullDataExpire == null) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
         if (skullDataExpire.expire.isBefore(nowSupplier.get())) {
-            this.skullDataCache.remove(playerName);
+            identification.peek(this.skullCacheByName::remove, this.skullCacheByUuid::remove);
 
             return CompletableFuture.completedFuture(Optional.empty());
         }
@@ -46,18 +50,21 @@ class SkullCacheDatabase implements SkullDatabase {
     }
 
     @Override
-    public void saveSkullData(String playerName, SkullData skullData, Instant expire) {
-        this.skullDataCache.put(playerName, new SkullDataWithExpire(skullData, expire));
+    public void saveSkullData(PlayerIdentification identification, SkullData skullData, Instant expire) {
+        SkullDataWithExpire dataWithExpire = new SkullDataWithExpire(skullData, expire);
+
+        identification.peek(name -> this.skullCacheByName.put(name, dataWithExpire), uuid -> this.skullCacheByUuid.put(uuid, dataWithExpire));
+
         this.updateCache();
     }
 
     private void updateCache() {
-        for (Map.Entry<String, SkullDataWithExpire> entry : new HashSet<>(this.skullDataCache.entrySet())) {
+        for (Map.Entry<UUID, SkullDataWithExpire> entry : new HashSet<>(this.skullCacheByUuid.entrySet())) {
             if (entry.getValue().expire.isAfter(nowSupplier.get())) {
                 continue;
             }
 
-            this.skullDataCache.remove(entry.getKey());
+            this.skullCacheByUuid.remove(entry.getKey());
         }
     }
 

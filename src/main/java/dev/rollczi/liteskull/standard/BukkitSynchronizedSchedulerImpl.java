@@ -6,6 +6,7 @@ package dev.rollczi.liteskull.standard;
 
 import dev.rollczi.liteskull.api.SynchronizedExecutor;
 import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.NotNull;
 
 class BukkitSynchronizedSchedulerImpl implements SynchronizedExecutor {
 
@@ -16,7 +17,7 @@ class BukkitSynchronizedSchedulerImpl implements SynchronizedExecutor {
     }
 
     @Override
-    public void execute(Runnable command) {
+    public void execute(@NotNull Runnable command) {
         this.plugin.getServer().getScheduler().runTask(plugin, command);
     }
 

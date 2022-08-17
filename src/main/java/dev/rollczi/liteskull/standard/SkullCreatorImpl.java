@@ -29,26 +29,35 @@ class SkullCreatorImpl implements SkullCreator {
 
     @Override
     public ItemStack applyOnItem(ItemStack item, SkullData data) {
-        SkullMeta skullMeta = (SkullMeta) item.getItemMeta();
-
-        UUID uuid = UUID.nameUUIDFromBytes((data.getValue() + data.getSignature()).getBytes());
-        GameProfile gameProfile = new GameProfile(uuid, null);
-        PropertyMap properties = gameProfile.getProperties();
-        Property property = new Property("textures", data.getValue(), data.getSignature());
-
-        properties.put("textures", property);
-
         try {
-            Field profileField = skullMeta.getClass().getDeclaredField("profile");
+            SkullMeta skullMeta = (SkullMeta) item.getItemMeta();
 
-            profileField.setAccessible(true);
-            profileField.set(skullMeta, gameProfile);
-        } catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException exception) {
-            exception.printStackTrace();
+            if (skullMeta == null) {
+                return item;
+            }
+
+            UUID uuid = UUID.nameUUIDFromBytes((data.getValue() + data.getSignature()).getBytes());
+            GameProfile gameProfile = new GameProfile(uuid, null);
+            PropertyMap properties = gameProfile.getProperties();
+            Property property = new Property("textures", data.getValue(), data.getSignature());
+
+            properties.put("textures", property);
+
+            try {
+                Field profileField = skullMeta.getClass().getDeclaredField("profile");
+
+                profileField.setAccessible(true);
+                profileField.set(skullMeta, gameProfile);
+            } catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException exception) {
+                exception.printStackTrace();
+            }
+
+            item.setItemMeta(skullMeta);
+            return item;
         }
-
-        item.setItemMeta(skullMeta);
-        return item;
+        catch (NullPointerException exception) {
+            return item;
+        }
     }
 
 }

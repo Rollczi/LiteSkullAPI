@@ -4,6 +4,7 @@
 
 package dev.rollczi.liteskull.api.extractor;
 
+import dev.rollczi.liteskull.api.PlayerIdentification;
 import dev.rollczi.liteskull.api.SkullData;
 
 import java.util.Optional;
@@ -15,12 +16,6 @@ import java.util.concurrent.CompletableFuture;
 
 public interface SkullExtractor {
 
-    /**
-     * Extract data from by playerName.
-     *
-     * @param playerName Player name.
-     * @return CompletableFuture which will be completed with an Optional SkullData.
-     */
-    CompletableFuture<Optional<SkullData>> extractData(String playerName);
+    CompletableFuture<Optional<SkullData>> extractData(PlayerIdentification playerIdentification);
 
 }

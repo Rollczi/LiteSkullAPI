@@ -2,7 +2,7 @@
  * Copyright (c) 2022 Rollczi
  */
 
-package dev.rollczi.liteskull.exception;
+package dev.rollczi.liteskull.api;
 
 public class SkullAPIException extends RuntimeException {
 

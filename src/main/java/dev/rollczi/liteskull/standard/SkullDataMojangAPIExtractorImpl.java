@@ -8,6 +8,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import dev.rollczi.liteskull.api.PlayerIdentification;
 import dev.rollczi.liteskull.api.SkullData;
 import dev.rollczi.liteskull.api.extractor.SkullDataAPIExtractor;
 
@@ -23,53 +24,59 @@ import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
 
-    private final static String MOJANG_URL = "https://api.mojang.com/users/profiles/minecraft/%s";
-    private final static String MOJANG_SIGNATURE_URL = "https://sessionserver.mojang.com/session/minecraft/profile/%s";
+    private static final String MOJANG_URL = "https://api.mojang.com/users/profiles/minecraft/%s";
+    private static final String MOJANG_SIGNATURE_URL = "https://sessionserver.mojang.com/session/minecraft/profile/%s";
 
-    private final Gson gson = new Gson();
+    private static final Gson GSON = new Gson();
+
     private final int limitMojang;
-    private final Cache<UUID, String> lastRequests;
+    private final Cache<UUID, Boolean> lastRequests;
 
-    public SkullDataMojangAPIExtractorImpl(int limitMojang, Duration expireRequests) {
+    private Executor executor;
+
+    public SkullDataMojangAPIExtractorImpl(int threadPool, int limitMojang, Duration expireRequests) {
         this.limitMojang = limitMojang;
         this.lastRequests = CacheBuilder.newBuilder()
                 .expireAfterWrite(expireRequests.get(ChronoUnit.SECONDS), TimeUnit.SECONDS)
                 .build();
+        this.executor = Executors.newFixedThreadPool(threadPool);
     }
 
     @Override
-    public CompletableFuture<Optional<SkullData>> extractData(String player) {
+    public CompletableFuture<Optional<SkullData>> extractData(PlayerIdentification identification) {
         if (lastRequests.size() >= limitMojang) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                lastRequests.put(UUID.randomUUID(), player);
-                String result = readURLContent(String.format(MOJANG_URL, player));
+                lastRequests.put(UUID.randomUUID(), true);
 
-                if (result.isEmpty()) {
+                Optional<String> optionalUuid = this.extractUuid(identification);
+
+                if (!optionalUuid.isPresent()) {
                     return Optional.empty();
                 }
 
-                JsonObject jsonObject = gson.fromJson(result, JsonObject.class);
-                String uuid = jsonObject.get("id").toString().replace("\"", "");
+                String uuid = optionalUuid.get();
                 String signature = readURLContent(String.format(MOJANG_SIGNATURE_URL, uuid));
 
                 if (signature.isEmpty()) {
                     return Optional.empty();
                 }
 
-                jsonObject = gson.fromJson(signature, JsonObject.class);
+                JsonObject jsonObject = GSON.fromJson(signature, JsonObject.class);
 
                 String valueCoded = jsonObject.getAsJsonArray("properties").get(0).getAsJsonObject().get("value").getAsString();
                 String decoded = new String(Base64.getDecoder().decode(valueCoded));
 
-                jsonObject = gson.fromJson(decoded, JsonObject.class);
+                jsonObject = GSON.fromJson(decoded, JsonObject.class);
 
                 String skinURL = jsonObject.getAsJsonObject("textures").getAsJsonObject("SKIN").get("url").getAsString();
                 byte[] skinByte = ("{\"textures\":{\"SKIN\":{\"url\":\"" + skinURL + "\"}}}").getBytes();
@@ -80,7 +87,12 @@ class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
             } catch (Exception ignore) {}
 
             return Optional.empty();
-        });
+        }, executor);
+    }
+
+    @Override
+    public void setExecutor(Executor executor) {
+        this.executor = executor;
     }
 
     private String readURLContent(String urlStr) {
@@ -106,6 +118,21 @@ class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
         } catch (IOException ignored) {}
 
         return builder.toString();
+    }
+
+    private Optional<String> extractUuid(PlayerIdentification identification) {
+        return identification.map(name -> {
+            String result = readURLContent(String.format(MOJANG_URL, name));
+
+            if (result.isEmpty()) {
+                return Optional.empty();
+            }
+
+            JsonObject jsonObject = GSON.fromJson(result, JsonObject.class);
+            String replace = jsonObject.get("id").toString().replace("\"", "");
+
+            return Optional.of(replace);
+        }, uuid1 -> Optional.of(uuid1.toString()));
     }
     
 }
