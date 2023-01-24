@@ -4,7 +4,6 @@
 
 package dev.rollczi.skullplugin;
 
-import com.google.common.cache.CacheBuilder;
 import dev.rollczi.liteskullapi.SkullAPI;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -27,7 +26,7 @@ public class SkullCommand implements CommandExecutor {
 
         Player player = (Player) sender;
 
-        skullAPI.acceptSyncSkull(player.getName(), itemStack -> player.getInventory().addItem());
+        this.skullAPI.acceptSyncSkull(player.getName(), itemStack -> player.getInventory().addItem(itemStack));
 
         return true;
     }
