@@ -6,7 +6,6 @@ package dev.rollczi.liteskullapi.extractor;
 
 import dev.rollczi.liteskullapi.PlayerIdentification;
 import dev.rollczi.liteskullapi.SkullData;
-
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;

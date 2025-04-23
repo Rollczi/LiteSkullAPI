@@ -10,6 +10,4 @@ public interface SkullCreator {
 
     ItemStack create(SkullData data);
 
-    ItemStack applyOnItem(ItemStack item, SkullData data);
-
 }

@@ -7,7 +7,6 @@ package dev.rollczi.liteskullapi.standard;
 import dev.rollczi.liteskullapi.PlayerIdentification;
 import dev.rollczi.liteskullapi.SkullData;
 import dev.rollczi.liteskullapi.extractor.SkullDatabase;
-
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;

@@ -20,14 +20,12 @@ public class SkullCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             return true;
         }
 
-        Player player = (Player) sender;
-
-        this.skullAPI.acceptSyncSkull(player.getName(), itemStack -> player.getInventory().addItem(itemStack));
-
+        String name = args.length > 0 ? args[0] : player.getName();
+        this.skullAPI.acceptSkull(name, itemStack -> player.getInventory().addItem(itemStack));
         return true;
     }
 
