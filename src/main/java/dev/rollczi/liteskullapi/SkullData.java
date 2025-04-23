@@ -6,20 +6,31 @@ package dev.rollczi.liteskullapi;
 
 public class SkullData {
 
+    private final String name;
     private final String signature;
-    private final String value;
+    private final String texture;
 
-    public SkullData(String signature, String value) {
+    public SkullData(String name, String signature, String texture) {
+        this.name = name;
         this.signature = signature;
-        this.value = value;
+        this.texture = texture;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getSignature() {
         return signature;
     }
 
+    @Deprecated
     public String getValue() {
-        return value;
+        return texture;
+    }
+
+    public String getTexture() {
+        return texture;
     }
 
 }

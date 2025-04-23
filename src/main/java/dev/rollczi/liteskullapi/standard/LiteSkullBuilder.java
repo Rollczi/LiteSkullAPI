@@ -8,20 +8,19 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import dev.rollczi.liteskullapi.LiteSkullAPI;
 import dev.rollczi.liteskullapi.SkullAPI;
 import dev.rollczi.liteskullapi.SkullCreator;
-import dev.rollczi.liteskullapi.SynchronizedExecutor;
-import dev.rollczi.liteskullapi.extractor.SkullDataDefault;
-import dev.rollczi.liteskullapi.extractor.SkullDataAPIExtractor;
-import dev.rollczi.liteskullapi.extractor.SkullDataPlayerExtractor;
 import dev.rollczi.liteskullapi.SkullData;
+import dev.rollczi.liteskullapi.SynchronizedExecutor;
+import dev.rollczi.liteskullapi.extractor.SkullDataAPIExtractor;
+import dev.rollczi.liteskullapi.extractor.SkullDataDefault;
+import dev.rollczi.liteskullapi.extractor.SkullDataPlayerExtractor;
 import dev.rollczi.liteskullapi.extractor.SkullDatabase;
-import org.bukkit.plugin.Plugin;
-
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bukkit.plugin.Plugin;
 
 public class LiteSkullBuilder {
 
@@ -85,7 +84,7 @@ public class LiteSkullBuilder {
     }
 
     public LiteSkullBuilder defaultSkull(SkullData skullData) {
-        this.skullDataDefault = () -> skullData;
+        this.skullDataDefault = identification -> skullData;
         return this;
     }
 

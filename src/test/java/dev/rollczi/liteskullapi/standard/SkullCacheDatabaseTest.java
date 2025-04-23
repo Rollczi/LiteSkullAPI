@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SkullCacheDatabaseTest {
 
-    private final static SkullData DATA = new SkullData("", "");
+    private final static SkullData DATA = new SkullData("", "", "");
 
     private final static Instant PAST = Instant.ofEpochSecond(0);
     private final static Instant NOW = Instant.ofEpochSecond(100);

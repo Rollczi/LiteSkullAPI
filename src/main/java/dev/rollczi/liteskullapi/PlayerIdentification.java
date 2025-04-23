@@ -4,12 +4,11 @@
 
 package dev.rollczi.liteskullapi;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.jetbrains.annotations.Nullable;
 
 public class PlayerIdentification {
 

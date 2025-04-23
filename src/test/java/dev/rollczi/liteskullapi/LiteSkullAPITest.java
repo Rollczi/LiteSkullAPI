@@ -5,6 +5,10 @@
 package dev.rollczi.liteskullapi;
 
 import dev.rollczi.liteskullapi.test.TestSkullDataAPIExtractor;
+import java.util.concurrent.ExecutorService;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 
@@ -13,20 +17,19 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.awaitility.Awaitility.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LiteSkullAPITest {
 
     private final SkullAPI api = LiteSkullFactory.builder()
-            .scheduler(command -> {
-                Thread thread = new Thread(command);
+        .scheduler(command -> {
+            Thread thread = new Thread(command);
 
-                thread.setName("sync");
-                thread.start();
-            })
-            .apiExtractor(new TestSkullDataAPIExtractor())
-            .build();
+            thread.setName("sync");
+            thread.start();
+        })
+        .creator(data -> new ItemStack(Material.PLAYER_HEAD))
+        .apiExtractor(new TestSkullDataAPIExtractor())
+        .build();
 
     @Test
     void getSkull() {
@@ -61,97 +64,50 @@ class LiteSkullAPITest {
     }
 
     @Test
-    void awaitSkull() {
-        assertNotNull(api.awaitSkull("", 1, SECONDS));
-    }
-
-    @Test
-    void awaitSkullData() {
-        assertNotNull(api.awaitSkullData("", 1, SECONDS));
-    }
-
-    @Test
-    void awaitSkullByUuid() {
-        assertNotNull(api.awaitSkull(UUID.randomUUID(), 1, SECONDS));
-    }
-
-    @Test
-    void awaitSkullDataByUuid() {
-        assertNotNull(api.awaitSkullData(UUID.randomUUID(), 1, SECONDS));
-    }
-
-    @Test
-    void acceptSyncSkull() {
+    void acceptSkull() {
         Result result = new Result();
 
-        api.acceptSyncSkull("test", item -> this.completeResult(result));
+        api.acceptSkull("test", item -> this.completeResult(result));
         result.assertSynchronously();
     }
 
     @Test
-    void acceptAsyncSkull() {
+    void acceptSkullByUuid() {
         Result result = new Result();
 
-        api.acceptAsyncSkull("test", item -> this.completeResult(result));
-        result.assertAsynchronously();
-    }
-
-    @Test
-    void acceptSyncSkullByUuid() {
-        Result result = new Result();
-
-        api.acceptSyncSkull(UUID.randomUUID(), item -> this.completeResult(result));
+        api.acceptSkull(UUID.randomUUID(), item -> this.completeResult(result));
         result.assertSynchronously();
     }
 
     @Test
-    void acceptAsyncSkullByUuid() {
+    void acceptSkullData() {
         Result result = new Result();
 
-        api.acceptAsyncSkull(UUID.randomUUID(), item -> this.completeResult(result));
-        result.assertAsynchronously();
-    }
-
-    @Test
-    void acceptSyncSkullData() {
-        Result result = new Result();
-
-        api.acceptSyncSkullData("test", skullData -> this.completeResult(result));
+        api.acceptSkullData("test", skullData -> this.completeResult(result));
         result.assertSynchronously();
     }
 
     @Test
-    void acceptAsyncSkullData() {
+    void acceptSkullDataByUuid() {
         Result result = new Result();
 
-        api.acceptAsyncSkullData("test", skullData -> this.completeResult(result));
-        result.assertAsynchronously();
-    }
-
-    @Test
-    void acceptSyncSkullDataByUuid() {
-        Result result = new Result();
-
-        api.acceptSyncSkullData(UUID.randomUUID(), skullData -> this.completeResult(result));
+        api.acceptSkullData(UUID.randomUUID(), skullData -> this.completeResult(result));
         result.assertSynchronously();
-    }
-
-    @Test
-    void acceptAsyncSkullDataByUuid() {
-        Result result = new Result();
-
-        api.acceptAsyncSkullData(UUID.randomUUID(), skullData -> this.completeResult(result));
-        result.assertAsynchronously();
     }
 
     @Test
     void testShutdown() {
         SkullAPI build = LiteSkullFactory.builder()
-                .build();
+            .build();
 
         build.shutdown();
 
-        assertTrue(build.getAsyncExecutor().isShutdown());
+        assertThat(build).isInstanceOf(LiteSkullAPI.class)
+            .isNotNull()
+            .isInstanceOf(LiteSkullAPI.class)
+            .extracting("asyncExecutor")
+            .asInstanceOf(type(ExecutorService.class))
+            .returns(true, executorService -> executorService.isShutdown());
     }
 
 
@@ -179,10 +135,6 @@ class LiteSkullAPITest {
 
         void assertSynchronously() {
             await().atMost(3, SECONDS).until(() -> this.completed && this.synchronously);
-        }
-
-        void assertAsynchronously() {
-            await().atMost(3, SECONDS).until(() -> this.completed && !this.synchronously);
         }
 
     }

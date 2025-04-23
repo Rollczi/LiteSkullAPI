@@ -11,7 +11,6 @@ import com.google.gson.JsonObject;
 import dev.rollczi.liteskullapi.PlayerIdentification;
 import dev.rollczi.liteskullapi.SkullData;
 import dev.rollczi.liteskullapi.extractor.SkullDataAPIExtractor;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
 
 class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
 
-    private static final String MOJANG_URL = "https://api.mojang.com/users/profiles/minecraft/%s";
-    private static final String MOJANG_SIGNATURE_URL = "https://sessionserver.mojang.com/session/minecraft/profile/%s";
+    private static final String GET_PROFILE_URL = "https://api.mojang.com/users/profiles/minecraft/%s";
+    private static final String GET_FULL_PROFILE_URL = "https://sessionserver.mojang.com/session/minecraft/profile/%s";
 
     private static final Gson GSON = new Gson();
 
@@ -43,8 +43,8 @@ class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
     public SkullDataMojangAPIExtractorImpl(int threadPool, int limitMojang, Duration expireRequests) {
         this.limitMojang = limitMojang;
         this.lastRequests = CacheBuilder.newBuilder()
-                .expireAfterWrite(expireRequests.get(ChronoUnit.SECONDS), TimeUnit.SECONDS)
-                .build();
+            .expireAfterWrite(expireRequests.get(ChronoUnit.SECONDS), TimeUnit.SECONDS)
+            .build();
         this.executor = Executors.newFixedThreadPool(threadPool);
     }
 
@@ -54,40 +54,36 @@ class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                lastRequests.put(UUID.randomUUID(), true);
+        lastRequests.put(UUID.randomUUID(), true);
+        return CompletableFuture.supplyAsync(() -> this.fetchUuid(identification)
+            .flatMap(uuid -> fetchTexture(uuid)), executor);
+    }
 
-                Optional<String> optionalUuid = this.extractUuid(identification);
+    private Optional<SkullData> fetchTexture(String uuid) {
+        Optional<MojangFullProfile> fullProfile = readUrlContent(String.format(GET_FULL_PROFILE_URL, uuid), MojangFullProfile.class);
+        Optional<String> textureBase64 = fullProfile.flatMap(profile -> profile.properties.stream()
+            .filter(property -> property.name.equals("textures"))
+            .map(property -> property.value)
+            .findFirst()
+        );
 
-                if (!optionalUuid.isPresent()) {
-                    return Optional.empty();
-                }
-
-                String uuid = optionalUuid.get();
-                String signature = readURLContent(String.format(MOJANG_SIGNATURE_URL, uuid));
-
-                if (signature.isEmpty()) {
-                    return Optional.empty();
-                }
-
-                JsonObject jsonObject = GSON.fromJson(signature, JsonObject.class);
-
-                String valueCoded = jsonObject.getAsJsonArray("properties").get(0).getAsJsonObject().get("value").getAsString();
-                String decoded = new String(Base64.getDecoder().decode(valueCoded));
-
-                jsonObject = GSON.fromJson(decoded, JsonObject.class);
-
-                String skinURL = jsonObject.getAsJsonObject("textures").getAsJsonObject("SKIN").get("url").getAsString();
-                byte[] skinByte = ("{\"textures\":{\"SKIN\":{\"url\":\"" + skinURL + "\"}}}").getBytes();
-
-                String value = new String(Base64.getEncoder().encode(skinByte));
-
-                return Optional.of(new SkullData(SkullUtils.DEFAULT_SIGNATURE, value));
-            } catch (Exception ignore) {}
-
+        if (!textureBase64.isPresent()) {
             return Optional.empty();
-        }, executor);
+        }
+
+        MojangFullProfile profile = fullProfile.get();
+        String skinTextureBase64 = extractSkinTexture(textureBase64.get());
+        return Optional.of(new SkullData(profile.name, SkullUtils.DEFAULT_SIGNATURE, skinTextureBase64));
+    }
+
+    private static String extractSkinTexture(String textureBase64) {
+        String textureJson = new String(Base64.getDecoder().decode(textureBase64));
+        JsonObject texture = GSON.fromJson(textureJson, JsonObject.class);
+
+        String skinUrl = texture.getAsJsonObject("textures").getAsJsonObject("SKIN").get("url").getAsString();
+        String skullJson = ("{\"textures\":{\"SKIN\":{\"url\":\"" + skinUrl + "\"}}}");
+        byte[] skullBase64 = Base64.getEncoder().encode(skullJson.getBytes());
+        return new String(skullBase64);
     }
 
     @Override
@@ -95,7 +91,14 @@ class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
         this.executor = executor;
     }
 
-    private String readURLContent(String urlStr) {
+    private Optional<String> fetchUuid(PlayerIdentification identification) {
+        return identification.map(name -> {
+            return readUrlContent(String.format(GET_PROFILE_URL, name), MojangProfile.class)
+                .map(profile -> profile.id);
+        }, uuid -> Optional.of(uuid.toString()));
+    }
+
+    private <T> Optional<T> readUrlContent(String urlStr, Class<T> type) {
         StringBuilder builder = new StringBuilder();
 
         try {
@@ -115,24 +118,42 @@ class SkullDataMojangAPIExtractorImpl implements SkullDataAPIExtractor {
                     builder.append(line);
                 }
             }
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+        }
 
-        return builder.toString();
+        if (builder.length() == 0) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(GSON.fromJson(builder.toString(), type));
     }
 
-    private Optional<String> extractUuid(PlayerIdentification identification) {
-        return identification.map(name -> {
-            String result = readURLContent(String.format(MOJANG_URL, name));
+    public static class MojangProfile {
+        private final String id;
 
-            if (result.isEmpty()) {
-                return Optional.empty();
+        public MojangProfile(String id) {
+            this.id = id;
+        }
+    }
+
+    private static class MojangFullProfile {
+        private final String name;
+        private final List<Property> properties;
+
+        public MojangFullProfile(String name, List<Property> properties) {
+            this.name = name;
+            this.properties = properties;
+        }
+
+        public static class Property {
+            private final String name;
+            private final String value;
+
+            public Property(String name, String value) {
+                this.name = name;
+                this.value = value;
             }
-
-            JsonObject jsonObject = GSON.fromJson(result, JsonObject.class);
-            String replace = jsonObject.get("id").toString().replace("\"", "");
-
-            return Optional.of(replace);
-        }, uuid1 -> Optional.of(uuid1.toString()));
+        }
     }
-    
+
 }
