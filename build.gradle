@@ -20,7 +20,7 @@ dependencies {
 
     // JUnit tests jupiter
 
-    testImplementation 'org.awaitility:awaitility:4.2.2'
+    testImplementation 'org.awaitility:awaitility:4.3.0'
     testImplementation "org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT"
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
