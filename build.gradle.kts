@@ -20,11 +20,11 @@ java {
 
 dependencies {
     compileOnly("org.jetbrains:annotations:26.0.2")
-    compileOnly("org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.21.8-R0.1-SNAPSHOT")
     compileOnly("com.mojang:authlib:1.5.25")
 
     testImplementation("org.awaitility:awaitility:4.3.0")
-    testImplementation("org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT")
+    testImplementation("org.spigotmc:spigot-api:1.21.8-R0.1-SNAPSHOT")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
     testImplementation("org.assertj:assertj-core:3.27.4")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
