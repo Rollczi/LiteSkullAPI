@@ -26,7 +26,7 @@ dependencies {
     testImplementation("org.awaitility:awaitility:4.3.0")
     testImplementation("org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
-    testImplementation("org.assertj:assertj-core:3.27.3")
+    testImplementation("org.assertj:assertj-core:3.27.4")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.4")
 }
 
